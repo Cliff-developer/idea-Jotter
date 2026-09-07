@@ -149,12 +149,21 @@ const Sync = (() => {
     return gists;
   }
 
+  async function gistExists(id) {
+    try { await ghFetch(`/gists/${id}`); return true; }
+    catch { return false; }
+  }
+
   // Finds an existing gist that already holds our data file, so a second
   // device using the same token attaches to the first device's gist instead
-  // of silently creating its own.
+  // of silently creating its own. Also recovers automatically if the
+  // previously-linked gist was deleted on GitHub.
   async function resolveGistId() {
     const cached = getGistId();
-    if (cached) return cached;
+    if (cached) {
+      if (await gistExists(cached)) return cached;
+      resetGistId(); // stale link — fall through and rediscover/create fresh
+    }
     try {
       const gists = await listGists();
       const matches = gists.filter((g) => g.files && g.files[FILENAME]);
@@ -215,5 +224,7 @@ const Sync = (() => {
     statusEl = statusElement || null;
   }
 
-  return { init, sync, scheduleSync, isConfigured, setToken, getGistId, setGistIdManual: setGistId, gistUrl, lastSync };
+  function resetGistId() { localStorage.removeItem(GIST_KEY); }
+
+  return { init, sync, scheduleSync, isConfigured, setToken, getGistId, setGistIdManual: setGistId, resetGistId, gistUrl, lastSync };
 })();
