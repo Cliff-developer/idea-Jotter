@@ -1,4 +1,4 @@
-const CACHE = 'idea-jotter-v1';
+const CACHE = 'idea-jotter-v2';
 const ASSETS = [
   './',
   './index.html',

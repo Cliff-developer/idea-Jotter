@@ -48,6 +48,12 @@ How conflicts are handled: each entry carries its own "last updated" time. If yo
 - Voice memos are included in the sync payload as embedded audio, so a lot of long recordings will make each sync slower and the gist larger. Fine for normal use; not ideal for hours of audio.
 - This is separate from the manual "Export all data" / "Restore from file" feature, which still works fully offline and doesn't need a token.
 
+## Updating the app later
+
+This is an installed PWA, so it caches its own files aggressively for offline use. Whenever you (or I) push new code, the cache's version name in `sw.js` — the `CACHE` constant at the top — needs to change (e.g. `idea-jotter-v2` → `idea-jotter-v3`). Without that, an already-installed device can keep running the old cached JavaScript indefinitely even after the files on GitHub have changed, and it'll look like nothing happened.
+
+After pushing an update with a bumped cache version, give it one full close-and-reopen (or a hard refresh) on each device to pick it up.
+
 ## Files
 
 - `index.html` — app shell
