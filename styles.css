@@ -339,7 +339,6 @@ body {
 .stop-rec-btn { color: var(--high); }
 .cancel-rec-btn { color: var(--ink-faint); margin-left: 4px; }
 
-/* Sheets */
 .sheet-overlay {
   position: fixed;
   inset: 0;
@@ -347,6 +346,11 @@ body {
   display: flex;
   align-items: flex-end;
   z-index: 50;
+}
+
+/* Forces display: none whenever the hidden attribute is present */
+.sheet-overlay[hidden] {
+  display: none !important;
 }
 
 .sheet {
