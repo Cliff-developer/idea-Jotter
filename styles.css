@@ -339,18 +339,21 @@ body {
 .stop-rec-btn { color: var(--high); }
 .cancel-rec-btn { color: var(--ink-faint); margin-left: 4px; }
 
+/* Sheets */
 .sheet-overlay {
   position: fixed;
   inset: 0;
   background: rgba(34, 38, 43, 0.35);
-  display: flex;
   align-items: flex-end;
   z-index: 50;
 }
 
-/* Forces display: none whenever the hidden attribute is present */
 .sheet-overlay[hidden] {
-  display: none !important;
+  display: none;
+}
+
+.sheet-overlay:not([hidden]) {
+  display: flex;
 }
 
 .sheet {
@@ -395,6 +398,26 @@ body {
   padding: 4px 4px 0;
 }
 
+.menu-divider {
+  border-top: 1px solid var(--line);
+  margin: 8px 4px 12px;
+}
+
+.sync-section {
+  padding: 0 4px 4px;
+}
+
+.sync-hint {
+  font-size: 12px;
+  color: var(--ink-faint);
+  line-height: 1.5;
+  margin: 4px 0 10px;
+}
+
+.sync-section .sheet-actions {
+  margin-top: 10px;
+}
+
 /* Detail sheet fields */
 .field-label {
   font-size: 12px;
@@ -403,6 +426,25 @@ body {
   margin: 16px 0 6px;
 }
 .field-label:first-child { margin-top: 0; }
+
+.field-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 16px 0 6px;
+}
+.field-label-row .field-label { margin: 0; }
+
+.clear-deadline-btn {
+  background: none;
+  border: none;
+  color: var(--ink-faint);
+  font-size: 12px;
+  font-family: 'Work Sans', sans-serif;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
 
 .detail-text {
   font-size: 16px;

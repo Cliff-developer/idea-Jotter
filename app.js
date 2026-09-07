@@ -60,7 +60,7 @@
   }
 
   function visibleEntries() {
-    let list = entries.slice();
+    let list = entries.filter(e => !e.deleted);
     if (currentTab === 'ideas') list = list.filter(e => e.type === 'idea');
     if (currentTab === 'tasks') list = list.filter(e => e.type === 'task');
 
@@ -217,6 +217,7 @@
     const text = captureInput.value.trim();
     if (!text && !pendingAudio) return;
 
+    const createdAt = nowISO();
     const entry = {
       id: uuid(),
       type: captureType,
@@ -226,7 +227,9 @@
       deadline: null,
       reminders: [],
       done: false,
-      createdAt: nowISO()
+      deleted: false,
+      createdAt,
+      updatedAt: createdAt
     };
 
     await DB.put(entry);
@@ -235,6 +238,7 @@
     captureInput.style.height = 'auto';
     pendingAudio = null;
     render();
+    Sync.scheduleSync();
 
     if (entry.type === 'task') {
       // Open detail sheet right away so priority/deadline can be set
@@ -340,6 +344,7 @@
         btn.className = 'priority-option' + (entry.priority === p ? ' selected' : '');
         btn.innerHTML = `<span class="priority-dot ${p}"></span>${p[0].toUpperCase() + p.slice(1)}`;
         btn.addEventListener('click', () => {
+          captureFormState(entry);
           entry.priority = entry.priority === p ? null : p;
           openDetailSheet(id);
         });
@@ -347,19 +352,28 @@
       });
       sheetBody.appendChild(pRow);
 
-      const dLabel = document.createElement('div');
+      const dLabelRow = document.createElement('div');
+      dLabelRow.className = 'field-label-row';
+      const dLabel = document.createElement('span');
       dLabel.className = 'field-label';
       dLabel.textContent = 'Deadline';
-      sheetBody.appendChild(dLabel);
+      dLabelRow.appendChild(dLabel);
+      const clearBtn = document.createElement('button');
+      clearBtn.type = 'button';
+      clearBtn.className = 'clear-deadline-btn';
+      clearBtn.textContent = 'Clear';
+      dLabelRow.appendChild(clearBtn);
+      sheetBody.appendChild(dLabelRow);
 
       const dInput = document.createElement('input');
       dInput.type = 'datetime-local';
+      dInput.id = 'deadlineInput';
       dInput.className = 'deadline-input';
-      if (entry.deadline) dInput.value = toLocalInputValue(new Date(entry.deadline));
-      dInput.addEventListener('change', () => {
-        entry.deadline = dInput.value ? new Date(dInput.value).toISOString() : null;
-        entry.reminders = [];
-      });
+      // Pre-fill with the real current date/time (rounded to the next 5 min,
+      // 1 hour out) so there's nothing to manually type in most of the time —
+      // just nudge it, or hit Clear if this task has no deadline.
+      dInput.value = entry.deadline ? toLocalInputValue(new Date(entry.deadline)) : toLocalInputValue(suggestedDeadline());
+      clearBtn.addEventListener('click', () => { dInput.value = ''; });
       sheetBody.appendChild(dInput);
 
       const doneRow = document.createElement('label');
@@ -397,19 +411,51 @@
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
+  // Real current time, pushed 1 hour out and rounded to the nearest 5
+  // minutes — a sensible starting deadline so the field is never blank.
+  function suggestedDeadline() {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() + 60);
+    d.setSeconds(0, 0);
+    const m = d.getMinutes();
+    d.setMinutes(m - (m % 5));
+    return d;
+  }
+
+  // Preserve whatever's currently in the deadline field before the sheet
+  // gets rebuilt (e.g. from a priority click), so in-progress edits aren't lost.
+  function captureFormState(entry) {
+    const dEl = document.getElementById('deadlineInput');
+    if (dEl) entry.deadline = dEl.value ? new Date(dEl.value).toISOString() : null;
+  }
+
   async function saveDetailSheet(entry) {
+    if (entry.type === 'task') {
+      const dEl = document.getElementById('deadlineInput');
+      entry.deadline = (dEl && dEl.value) ? new Date(dEl.value).toISOString() : null;
+    }
+    entry.updatedAt = nowISO();
+    entry.reminders = [];
     await DB.put(entry);
     scheduleReminders(entry);
     sheetOverlay.hidden = true;
     render();
+    Sync.scheduleSync();
   }
 
   async function deleteEntry(id) {
-    await DB.delete(id);
-    entries = entries.filter(e => e.id !== id);
+    // Soft-delete: keep a tombstone locally so a GitHub sync propagates the
+    // deletion to the other device instead of the entry silently reappearing.
+    const entry = entries.find(e => e.id === id);
+    if (entry) {
+      entry.deleted = true;
+      entry.updatedAt = nowISO();
+      await DB.put(entry);
+    }
     clearScheduledReminders(id);
     sheetOverlay.hidden = true;
     render();
+    Sync.scheduleSync();
   }
 
   sheetOverlay.addEventListener('click', (e) => { if (e.target === sheetOverlay) sheetOverlay.hidden = true; });
@@ -417,13 +463,38 @@
   // ---------- Menu: export / import / notifications ----------
 
   const menuOverlay = $('#menuOverlay');
-  $('#menuBtn').addEventListener('click', () => { menuOverlay.hidden = false; updateNotifStatus(); });
+  $('#menuBtn').addEventListener('click', () => { menuOverlay.hidden = false; updateNotifStatus(); updateSyncStatus(); });
   menuOverlay.addEventListener('click', (e) => { if (e.target === menuOverlay) menuOverlay.hidden = true; });
 
   $('#exportBtn').addEventListener('click', exportData);
   $('#importBtn').addEventListener('click', () => $('#importFile').click());
   $('#importFile').addEventListener('change', importData);
   $('#notifBtn').addEventListener('click', enableNotifications);
+
+  $('#saveTokenBtn').addEventListener('click', async () => {
+    const input = $('#ghTokenInput');
+    const val = input.value.trim();
+    Sync.setToken(val);
+    input.value = '';
+    input.placeholder = val ? 'Token saved on this device' : 'GitHub token (gist scope)';
+    updateSyncStatus();
+    if (val) {
+      const result = await Sync.sync();
+      if (result.ok) render();
+    }
+  });
+
+  $('#syncNowBtn').addEventListener('click', async () => {
+    const result = await Sync.sync();
+    if (result.ok) render();
+  });
+
+  function updateSyncStatus() {
+    const el = $('#syncStatus');
+    if (!Sync.isConfigured()) { el.textContent = 'Not set up on this device yet.'; return; }
+    const last = Sync.lastSync();
+    el.textContent = last ? 'Last synced ' + fmtWhen(last) : 'Configured — not synced yet.';
+  }
 
   function blobToBase64(blob) {
     return new Promise((resolve, reject) => {
@@ -478,6 +549,8 @@
         copy.audio = { duration: e.audio.duration, blob: base64ToBlob(e.audio.dataUrl) };
       }
       if (!copy.reminders) copy.reminders = [];
+      if (!copy.updatedAt) copy.updatedAt = copy.createdAt;
+      if (typeof copy.deleted !== 'boolean') copy.deleted = false;
       return copy;
     });
 
@@ -492,6 +565,7 @@
     render();
     menuOverlay.hidden = true;
     ev.target.value = '';
+    Sync.scheduleSync();
   }
 
   // ---------- Notifications & reminders ----------
@@ -532,7 +606,7 @@
 
   function scheduleReminders(entry) {
     clearScheduledReminders(entry.id);
-    if (entry.type !== 'task' || !entry.deadline || entry.done) return;
+    if (entry.type !== 'task' || !entry.deadline || entry.done || entry.deleted) return;
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
     const deadlineTs = new Date(entry.deadline).getTime();
@@ -576,7 +650,7 @@
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
     const now = Date.now();
     for (const entry of entries) {
-      if (entry.type !== 'task' || !entry.deadline || entry.done) continue;
+      if (entry.type !== 'task' || !entry.deadline || entry.done || entry.deleted) continue;
       const deadlineTs = new Date(entry.deadline).getTime();
       for (const { stage, ms, label } of REMINDER_OFFSETS) {
         const fireAt = deadlineTs - ms;
@@ -599,8 +673,24 @@
     entries.forEach(scheduleReminders);
     catchUpMissedReminders();
 
+    Sync.init({
+      getEntries: () => entries,
+      onMerge: async (merged) => {
+        await DB.replaceAll(merged);
+        entries = merged;
+        entries.forEach(scheduleReminders);
+        render();
+        catchUpMissedReminders();
+      },
+      statusElement: null
+    });
+    if (Sync.isConfigured()) Sync.sync().then((r) => { if (r.ok) updateSyncStatus(); });
+
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') catchUpMissedReminders();
+      if (document.visibilityState === 'visible') {
+        catchUpMissedReminders();
+        if (Sync.isConfigured()) Sync.sync().then((r) => { if (r.ok) render(); });
+      }
     });
   }
 

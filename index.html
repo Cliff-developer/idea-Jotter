@@ -55,9 +55,9 @@
   </div>
 </div>
 
-<!--<!-- Menu sheet -->
+<!-- Menu sheet -->
 <div id="menuOverlay" class="sheet-overlay" hidden>
-  <div class="sheet" role="dialog" aria-modal="true" aria-label="Menu">
+  <div class="sheet" role="dialog" aria-modal="true">
     <div class="sheet-handle"></div>
     <div class="sheet-content">
       <button class="menu-item" id="exportBtn">Export all data</button>
@@ -65,6 +65,18 @@
       <input type="file" id="importFile" accept="application/json" hidden>
       <button class="menu-item" id="notifBtn">Enable deadline reminders</button>
       <div class="menu-status" id="notifStatus"></div>
+
+      <div class="menu-divider"></div>
+      <div class="sync-section">
+        <div class="field-label">Sync across devices</div>
+        <p class="sync-hint">Uses a private GitHub Gist as the shared file. Create a token at github.com/settings/tokens with only the <strong>gist</strong> scope, then paste it here once per device (PC and phone both need it).</p>
+        <input type="password" id="ghTokenInput" class="deadline-input" placeholder="GitHub token (gist scope)" autocomplete="off">
+        <div class="sheet-actions">
+          <button class="sheet-btn primary" id="saveTokenBtn">Save token</button>
+          <button class="sheet-btn" id="syncNowBtn">Sync now</button>
+        </div>
+        <div class="menu-status" id="syncStatus"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -94,6 +106,7 @@
 </div>
 
 <script src="db.js"></script>
+<script src="sync.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

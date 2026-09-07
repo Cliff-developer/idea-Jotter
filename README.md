@@ -29,6 +29,23 @@ Being honest about the constraint: **a static, backend-free app cannot guarantee
 
 In practice: keep the app installed (not just a bookmark) and open it at least occasionally, and reminders will be dependable for same-day deadlines.
 
+## Syncing between PC and phone (GitHub Gist)
+
+The app stays local-first, but you can bridge two devices using a **private GitHub Gist** as the shared file:
+
+1. Go to `github.com/settings/tokens` → generate a token scoped to **only "gist"** (don't use a broader token). Classic tokens work fine; a fine-grained token needs the "Gists" permission.
+2. On each device, open the app menu (⋯) → paste the token into "Sync across devices" → **Save token**. The first save creates a private gist and does an initial sync.
+3. On the second device, paste the *same* token and hit **Sync now** — it'll find the existing gist and pull your entries down.
+4. From then on, the app syncs automatically a few seconds after every change, and again whenever you reopen or foreground the app.
+
+How conflicts are handled: each entry carries its own "last updated" time. If you edit the same entry on both devices before syncing, whichever edit happened later wins for that entry as a whole (not merged field-by-field). Deletions sync too, using a small internal tombstone so a deleted item doesn't reappear from the other device's older copy.
+
+**Things to know:**
+- The token is stored only in that device's browser (`localStorage`) — it's never sent anywhere except directly to `api.github.com`. Treat it like a password; if a device is compromised, revoke the token on GitHub.
+- The gist is created as **secret**, not public — but "secret" on GitHub means unlisted, not access-controlled. Anyone with the exact gist URL could view it. Don't share the link.
+- Voice memos are included in the sync payload as embedded audio, so a lot of long recordings will make each sync slower and the gist larger. Fine for normal use; not ideal for hours of audio.
+- This is separate from the manual "Export all data" / "Restore from file" feature, which still works fully offline and doesn't need a token.
+
 ## Files
 
 - `index.html` — app shell

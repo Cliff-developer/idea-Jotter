@@ -5,6 +5,7 @@ const ASSETS = [
   './styles.css',
   './app.js',
   './db.js',
+  './sync.js',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png'
@@ -71,7 +72,7 @@ function checkDeadlinesFromDB() {
           { stage: 'due', ms: 0, label: 'at the deadline' }
         ];
         for (const entry of entries) {
-          if (entry.type !== 'task' || !entry.deadline || entry.done) continue;
+          if (entry.type !== 'task' || !entry.deadline || entry.done || entry.deleted) continue;
           const deadlineTs = new Date(entry.deadline).getTime();
           entry.reminders = entry.reminders || [];
           let changed = false;
