@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Idea Jotter</title>
+<meta name="theme-color" content="#EFEAE1">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div id="app">
+
+  <header class="topbar">
+    <h1 class="wordmark">Idea <em>Jotter</em></h1>
+    <button id="menuBtn" class="icon-btn" aria-label="Menu" aria-haspopup="true">
+      <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/></svg>
+    </button>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-tab="all" role="tab" aria-selected="true">All</button>
+    <button class="tab" data-tab="ideas" role="tab" aria-selected="false">Ideas</button>
+    <button class="tab" data-tab="tasks" role="tab" aria-selected="false">Tasks</button>
+  </nav>
+
+  <div class="sort-row" id="sortRow" hidden>
+    <span class="sort-label">Sort</span>
+    <button class="chip active" data-sort="date">Newest</button>
+    <button class="chip" data-sort="priority">Priority</button>
+    <button class="chip" data-sort="deadline">Deadline</button>
+  </div>
+
+  <main id="feed" class="feed">
+    <div id="emptyState" class="empty-state" hidden>
+      <p class="empty-title">Nothing here yet</p>
+      <p class="empty-sub">Type or record something below to start.</p>
+    </div>
+    <ul id="entryList" class="entry-list"></ul>
+  </main>
+
+</div>
+
+<!-- Entry detail / edit sheet -->
+<div id="sheetOverlay" class="sheet-overlay" hidden>
+  <div class="sheet" id="entrySheet" role="dialog" aria-modal="true">
+    <div class="sheet-handle"></div>
+    <div id="sheetBody"></div>
+  </div>
+</div>
+
+<!-- Menu sheet -->
+<div id="menuOverlay" class="sheet-overlay" hidden>
+  <div class="sheet" role="dialog" aria-modal="true">
+    <div class="sheet-handle"></div>
+    <div class="sheet-content">
+      <button class="menu-item" id="exportBtn">Export all data</button>
+      <button class="menu-item" id="importBtn">Restore from file</button>
+      <input type="file" id="importFile" accept="application/json" hidden>
+      <button class="menu-item" id="notifBtn">Enable deadline reminders</button>
+      <div class="menu-status" id="notifStatus"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Capture bar -->
+<div class="capture-bar" id="captureBar">
+  <div class="type-toggle" role="group" aria-label="Entry type">
+    <button class="type-btn active" data-type="idea">Idea</button>
+    <button class="type-btn" data-type="task">Task</button>
+  </div>
+  <div class="capture-row">
+    <button id="micBtn" class="mic-btn" aria-label="Record voice memo">
+      <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 15a3 3 0 003-3V6a3 3 0 10-6 0v6a3 3 0 003 3z"/><path fill="currentColor" d="M19 11a1 1 0 00-2 0 5 5 0 01-10 0 1 1 0 00-2 0 7 7 0 006 6.92V20h-2a1 1 0 000 2h6a1 1 0 000-2h-2v-2.08A7 7 0 0019 11z"/></svg>
+    </button>
+    <textarea id="captureInput" class="capture-input" placeholder="Type an idea…" rows="1"></textarea>
+    <button id="saveBtn" class="save-btn" aria-label="Save entry">
+      <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M5 12h12.17l-4.88-4.88a1 1 0 111.42-1.42l6.59 6.59a1 1 0 010 1.42l-6.59 6.59a1 1 0 11-1.42-1.42L17.17 14H5a1 1 0 010-2z"/></svg>
+    </button>
+  </div>
+  <div id="recordingBar" class="recording-bar" hidden>
+    <span class="rec-dot"></span>
+    <span id="recTime">0:00</span>
+    <span class="rec-hint">Recording…</span>
+    <button id="stopRecBtn" class="stop-rec-btn">Stop</button>
+    <button id="cancelRecBtn" class="cancel-rec-btn">Cancel</button>
+  </div>
+</div>
+
+<script src="db.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
