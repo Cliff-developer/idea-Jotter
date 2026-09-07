@@ -481,16 +481,29 @@
     if (val) {
       const result = await Sync.sync();
       if (result.ok) render();
+      updateSyncStatus();
     }
   });
 
   $('#syncNowBtn').addEventListener('click', async () => {
     const result = await Sync.sync();
     if (result.ok) render();
+    updateSyncStatus();
+  });
+
+  $('#useGistIdBtn').addEventListener('click', async () => {
+    const val = $('#gistIdInput').value.trim();
+    if (!val) return;
+    Sync.setGistIdManual(val);
+    const result = await Sync.sync();
+    if (result.ok) render();
+    updateSyncStatus();
   });
 
   function updateSyncStatus() {
     const el = $('#syncStatus');
+    const idField = $('#gistIdInput');
+    idField.value = Sync.getGistId() || '';
     if (!Sync.isConfigured()) { el.textContent = 'Not set up on this device yet.'; return; }
     const last = Sync.lastSync();
     el.textContent = last ? 'Last synced ' + fmtWhen(last) : 'Configured — not synced yet.';
@@ -684,12 +697,12 @@
       },
       statusElement: null
     });
-    if (Sync.isConfigured()) Sync.sync().then((r) => { if (r.ok) updateSyncStatus(); });
+    if (Sync.isConfigured()) Sync.sync().then((r) => { updateSyncStatus(); if (r.ok) render(); });
 
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
         catchUpMissedReminders();
-        if (Sync.isConfigured()) Sync.sync().then((r) => { if (r.ok) render(); });
+        if (Sync.isConfigured()) Sync.sync().then((r) => { updateSyncStatus(); if (r.ok) render(); });
       }
     });
   }

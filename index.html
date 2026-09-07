@@ -76,6 +76,15 @@
           <button class="sheet-btn" id="syncNowBtn">Sync now</button>
         </div>
         <div class="menu-status" id="syncStatus"></div>
+
+        <div class="field-label-row" style="margin-top:14px;">
+          <span class="field-label">Gist ID (advanced)</span>
+        </div>
+        <p class="sync-hint">Both devices should show the same ID after syncing. If they don't, copy the ID from your other device and paste it here to point this device at the same gist, then hit Sync now.</p>
+        <input type="text" id="gistIdInput" class="deadline-input" placeholder="Not created yet" autocomplete="off">
+        <div class="sheet-actions">
+          <button class="sheet-btn" id="useGistIdBtn">Use this ID</button>
+        </div>
       </div>
     </div>
   </div>

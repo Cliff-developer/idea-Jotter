@@ -35,8 +35,10 @@ The app stays local-first, but you can bridge two devices using a **private GitH
 
 1. Go to `github.com/settings/tokens` → generate a token scoped to **only "gist"** (don't use a broader token). Classic tokens work fine; a fine-grained token needs the "Gists" permission.
 2. On each device, open the app menu (⋯) → paste the token into "Sync across devices" → **Save token**. The first save creates a private gist and does an initial sync.
-3. On the second device, paste the *same* token and hit **Sync now** — it'll find the existing gist and pull your entries down.
+3. On the second device, paste the *same* token and hit **Sync now** — it looks up your existing gists for one already holding Idea Jotter data and attaches to it automatically, rather than creating a second one.
 4. From then on, the app syncs automatically a few seconds after every change, and again whenever you reopen or foreground the app.
+
+**If both devices ever end up pointed at different gists** (shows as "synced" on both but entries don't appear on the other side): open the menu → under "Gist ID (advanced)" you'll see the ID this device is using. Copy the ID from whichever device has the data you want to keep, paste it into the other device's Gist ID field, and hit **Use this ID**.
 
 How conflicts are handled: each entry carries its own "last updated" time. If you edit the same entry on both devices before syncing, whichever edit happened later wins for that entry as a whole (not merged field-by-field). Deletions sync too, using a small internal tombstone so a deleted item doesn't reappear from the other device's older copy.
 

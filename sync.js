@@ -136,12 +136,51 @@ const Sync = (() => {
     return Array.from(map.values());
   }
 
+  async function listGists() {
+    const gists = [];
+    let page = 1;
+    // Paginate defensively — most accounts have far fewer than a few hundred gists.
+    while (page <= 5) {
+      const batch = await ghFetch(`/gists?per_page=100&page=${page}`);
+      gists.push(...batch);
+      if (batch.length < 100) break;
+      page++;
+    }
+    return gists;
+  }
+
+  // Finds an existing gist that already holds our data file, so a second
+  // device using the same token attaches to the first device's gist instead
+  // of silently creating its own.
+  async function resolveGistId() {
+    const cached = getGistId();
+    if (cached) return cached;
+    try {
+      const gists = await listGists();
+      const matches = gists.filter((g) => g.files && g.files[FILENAME]);
+      if (matches.length === 0) return '';
+      // If more than one exists (e.g. from the bug where two devices each
+      // created their own), prefer the oldest as the canonical one.
+      matches.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+      setGistId(matches[0].id);
+      return matches[0].id;
+    } catch {
+      return '';
+    }
+  }
+
+  function gistUrl() {
+    const id = getGistId();
+    return id ? `https://gist.github.com/${id}` : '';
+  }
+
   async function sync() {
     if (!isConfigured()) return { ok: false, reason: 'not-configured' };
     if (syncing) return { ok: false, reason: 'already-syncing' };
     syncing = true;
     setStatus('Syncing…');
     try {
+      await resolveGistId();
       const localRaw = getLocalEntries ? getLocalEntries() : [];
       let remotePayload = null;
       try { remotePayload = await fetchGist(); } catch { /* no gist yet, or fetch failed — will create/overwrite on push */ }
@@ -176,5 +215,5 @@ const Sync = (() => {
     statusEl = statusElement || null;
   }
 
-  return { init, sync, scheduleSync, isConfigured, setToken, getGistId, lastSync };
+  return { init, sync, scheduleSync, isConfigured, setToken, getGistId, setGistIdManual: setGistId, gistUrl, lastSync };
 })();
